@@ -3,7 +3,6 @@
     "version": "1.0.0",
     "description": "",
     "main": "dist/index.js",
-    "type": "module",
     "scripts": {
         "prebuild": "npm install --save-dev @vercel/ncc",
         "build": "tsc -p tsconfig.build.json",
