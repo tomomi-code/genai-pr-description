@@ -1,0 +1,31 @@
+name: 'Intelligent DevOps (Intelli-Ops) using Azure OpenAI'
+description: 'AI-powered GitHub Action for code reviews, PR descriptions, unit tests, and issue management using Azure OpenAI.'
+inputs:
+  github-token:
+    description: 'GitHub token'
+    required: true
+  azure-openai-api-key:
+    description: 'Azure OpenAI API key'
+    required: true
+  azure-openai-endpoint:
+    description: 'Azure OpenAI endpoint'
+    required: true
+  azure-openai-version:
+    description: 'Azure OpenAI version'
+    required: true
+    default: '2023-05-15'
+  azure-openai-deployment:
+    description: 'Azure OpenAI deployment'
+    required: true
+  azure-openai-temperature:
+    description: 'Azure OpenAI temperature'
+    required: false
+    default: '0.7'
+
+runs:
+  using: 'node20'
+  main: 'dist/index.js'
+
+branding:
+  color: 'purple'
+  icon: 'check-circle'

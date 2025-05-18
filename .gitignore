@@ -1,0 +1,29 @@
+.env
+coverage.xml
+coverage
+.coverage
+__pycache__
+downloaded_images
+sample_models
+# pem files
+*.pem
+.ragatouille
+*.crt
+*.key
+*.p12
+*.context.json
+node_modules
+build
+.vercel
+.aider*
+/tmp
+tmp.rm.later
+package-lock.json
+
+# Next.js, ignore the .next folder
+/web/.next
+
+# JS file in the src/preview folder
+/src/preview/*.js
+/src/*.js
+/test/*.js
