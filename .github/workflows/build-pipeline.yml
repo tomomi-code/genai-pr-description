@@ -32,15 +32,6 @@ jobs:
     - name: Build Package
       run: npm run package-pipeline
 
-    - name: Delete existing artifacts with the name built-js
-      run: |
-        curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-          -H "Accept: application/vnd.github+json" \
-          https://api.github.com/repos/${{ github.repository }}/actions/artifacts \
-        | jq -r '.artifacts[] | select(.name=="built-js") | .id' \
-        | xargs -r -I {} curl -X DELETE -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-          https://api.github.com/repos/${{ github.repository }}/actions/artifacts/{}
-
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
