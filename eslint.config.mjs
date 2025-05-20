@@ -3,7 +3,7 @@ import parser from '@typescript-eslint/parser';
 
 export default [
   {
-    files: ['**/*.js', '**/*.ts'],
+    files: ['**/*.ts'],
     languageOptions: {
       parser: parser,
       parserOptions: {
@@ -19,5 +19,8 @@ export default [
       'quotes': ['error', 'single'],
       '@typescript-eslint/no-unused-vars': ['error'],
     },
+  },
+  {
+    ignores: ['dist/index.js'], // Add this to ignore the file
   },
 ];

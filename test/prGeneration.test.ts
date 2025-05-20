@@ -1,7 +1,6 @@
 import { generatePRDescription } from '@/src/prGeneration';
 import { AzureOpenAI } from 'openai';
-import { invokeModel } from '@/src/utils';
-import { context, getOctokit } from '@actions/github';
+import { getOctokit } from '@actions/github';
 
 jest.mock('@/src/utils', () => ({
   invokeModel: jest.fn().mockResolvedValue('Generated PR description'),
