@@ -57,7 +57,7 @@ jobs:
         name: built-js
         path: ./dist
         repository: tomomi-code/genai-pr-description
-        token: ${{ secrets.GITHUB_TOKEN }}
+        github-token: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Intelligent GitHub Actions
       run: node dist/index.js
