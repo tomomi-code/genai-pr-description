@@ -156,8 +156,21 @@ ${aiGeneratedContent}
 </details>
 `;
 
-  // Combine the original description with the foldable AI-generated content
-  const finalDescription = `${originalDescription}\n\n${foldableContent}`;
+ // Regex to match the old AI-generated section
+  const aiSectionRegex = new RegExp(
+    `<details>\\s*<summary>${PR_DESCRIPTION_HEADER.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}</summary>[\\s\\S]*?<\\/details>`,
+    'm'
+  );
+
+  let finalDescription: string;
+
+  if (aiSectionRegex.test(originalDescription)) {
+    // Overwrite the old AI-generated section
+    finalDescription = originalDescription.replace(aiSectionRegex, foldableContent);
+  } else {
+    // Append if not found (or user removed/edited it)
+    finalDescription = `${originalDescription}\n\n${foldableContent}`;
+  }
 
   // Update the PR with the combined description
   await octokit.rest.pulls.update({
