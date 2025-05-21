@@ -4,11 +4,9 @@
     "description": "",
     "main": "dist/index.js",
     "scripts": {
-        "prebuild": "npm install --save-dev @vercel/ncc",
         "build": "tsc -p tsconfig.build.json",
         "lint": "eslint .",
         "package": "npm run build && rm ./dist/index.js || true && cp ./build/index.js ./dist/ && ncc build -o dist",
-        "package-pipeline": "npm run build && mkdir -p ./dist && cp ./build/index.js ./dist/ && ncc build -o dist",
         "test": "jest"
     },
     "keywords": [],

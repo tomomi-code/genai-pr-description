@@ -51,27 +51,16 @@ jobs:
           echo "GitHub Token is not set"
         fi
 
-    - name: Fetch latest artifact URL
-      id: fetch-artifact
-      run: |
-        ARTIFACT_URL=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-          -H "Accept: application/vnd.github+json" \
-          https://api.github.com/repos/tomomi-code/genai-pr-description/actions/artifacts \
-          | jq -r '.artifacts | sort_by(.created_at) | reverse | .[] | select(.name=="built-js") | .archive_download_url' | head -n 1)
-        echo "artifact_url=$ARTIFACT_URL" >> $GITHUB_ENV
-
-    - name: Download and extract artifact
-      run: |
-        curl -L -o artifact.zip -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" "$artifact_url"
-        unzip artifact.zip -d ./dist
-      shell: bash
-
     - name: Intelligent GitHub Actions
-      run: node dist/index.js
+      uses: tomomi-code/genai-pr-description@main
+      with:
+        # Automatic Provision: The GITHUB_TOKEN is automatically created and provided by GitHub for each workflow run. You don't need to manually create or store this token as a secret.
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+
+        azure-openai-api-key: ${{ secrets.AZURE_OPENAI_API_KEY }}
+        azure-openai-endpoint: ${{ secrets.AZURE_OPENAI_ENDPOINT }}
+        azure-openai-version: '2024-04-01-preview'
+        azure-openai-deployment: ${{ secrets.AZURE_OPENAI_DEPLOYMENT }}
+        azure-openai-temperature: '0.7'
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        AZURE_OPENAI_API_KEY: ${{ secrets.AZURE_OPENAI_API_KEY }}
-        AZURE_OPENAI_ENDPOINT: ${{ secrets.AZURE_OPENAI_ENDPOINT }}
-        AZURE_OPENAI_VERSION: '2024-04-01-preview'
-        AZURE_OPENAI_DEPLOYMENT: ${{ secrets.AZURE_OPENAI_DEPLOYMENT }}
-        AZURE_OPENAI_TEMPERATURE: '0.7'

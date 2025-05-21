@@ -18,6 +18,7 @@ build
 .aider*
 /tmp
 dist
+!dist/index.js
 tmp.rm.later
 package-lock.json
 
