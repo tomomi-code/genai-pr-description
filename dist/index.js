@@ -36164,7 +36164,7 @@ exports.generatePRDescription = generatePRDescription;
 const github_1 = __nccwpck_require__(3228);
 // using abosolute path to import the functions from testGenerator.ts
 const utils_1 = __nccwpck_require__(1798);
-const PR_DESCRIPTION_HEADER = '🤖 AI-Generated PR Description (Powered by Azure OpenAI)';
+const PR_DESCRIPTION_HEADER = 'AI-Generated PR Description (Powered by Azure OpenAI)';
 const pr_generation_prompt = `
 <task context>
 You are a developer tasked with creating a pull request (PR) for a software project. Your primary goal is to provide a clear and informative description of the changes you are proposing.
@@ -36296,7 +36296,7 @@ The file changes summary is as follows:
     // Create the foldable AI-generated content
     const foldableContent = `
 <details>
-<summary>${PR_DESCRIPTION_HEADER}</summary>
+<summary>🤖 ${PR_DESCRIPTION_HEADER}</summary>
 
 ${aiGeneratedContent}
 
@@ -36305,7 +36305,7 @@ ${aiGeneratedContent}
     let finalDescription = originalDescription;
     // If the PR_DESCRIPTION_HEADER exists, remove the entire <details>...</details> block containing it
     if (originalDescription.includes(PR_DESCRIPTION_HEADER)) {
-        const aiSectionRegex = new RegExp(`<details[^>]*>\\s*<summary[^>]*>\\s*${PR_DESCRIPTION_HEADER.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*<\\/summary>[\\s\\S]*?<\\/details>`, 'gi');
+        const aiSectionRegex = new RegExp(`<details[^>]*>\\s*<summary[^>]*>[^<]*${PR_DESCRIPTION_HEADER.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}[^<]*<\\/summary>[\\s\\S]*?<\\/details>`, 'gi');
         const matches = originalDescription.match(aiSectionRegex);
         console.log('Matched old AI section:', matches);
         finalDescription = originalDescription.replace(aiSectionRegex, '').trim();
