@@ -36303,13 +36303,9 @@ ${aiGeneratedContent}
 </details>
 `;
     let finalDescription = originalDescription;
-    console.log(originalDescription);
-    console.log(originalDescription.includes(PR_DESCRIPTION_HEADER));
     // If the PR_DESCRIPTION_HEADER exists, remove the entire <details>...</details> block containing it
     if (originalDescription.includes(PR_DESCRIPTION_HEADER)) {
         const aiSectionRegex = new RegExp(`<details[^>]*>\\s*<summary[^>]*>[^<]*${PR_DESCRIPTION_HEADER.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}[^<]*<\\/summary>[\\s\\S]*?<\\/details>`, 'gi');
-        const matches = originalDescription.match(aiSectionRegex);
-        console.log('Matched old AI section:', matches);
         finalDescription = originalDescription.replace(aiSectionRegex, '').trim();
     }
     // Always append the new foldableContent
