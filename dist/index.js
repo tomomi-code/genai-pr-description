@@ -36302,8 +36302,14 @@ ${aiGeneratedContent}
 
 </details>
 `;
-    // Combine the original description with the foldable AI-generated content
-    const finalDescription = `${originalDescription}\n\n${foldableContent}`;
+    let finalDescription = originalDescription;
+    // If the PR_DESCRIPTION_HEADER exists, remove the entire <details>...</details> block containing it
+    if (originalDescription.includes(PR_DESCRIPTION_HEADER)) {
+        const aiSectionRegex = new RegExp(`<details>\\s*<summary>${PR_DESCRIPTION_HEADER.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}</summary>[\\s\\S]*?<\\/details>`, 'm');
+        finalDescription = originalDescription.replace(aiSectionRegex, '').trim();
+    }
+    // Always append the new foldableContent
+    finalDescription = `${finalDescription}\n\n${foldableContent}`;
     // Update the PR with the combined description
     await octokit.rest.pulls.update({
         ...repo,
