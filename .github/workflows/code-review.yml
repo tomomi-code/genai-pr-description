@@ -12,7 +12,7 @@ concurrency:
 jobs:
   review:
     runs-on: ubuntu-latest
-    environment: OpenAI_Intelligent_DevOps
+    environment: OpenAI_Intelligent_DevOps_o1
 
     permissions:
       # read repository contents and write pull request comments
