@@ -57,13 +57,24 @@ export async function invokeModel(client: AzureOpenAI, deployment: string, paylo
         },
       ];
 
-      // Call the chat completions API using the deployment name
-      const response = await client.chat.completions.create({ 
-        messages, 
-        model: deployment, 
-        max_tokens: 4096,
-        temperature: temperature
-      });
+      // Use max_completion_tokens for 2024-12-01-preview and later, else max_tokens
+      let params: any = {
+        messages,
+        model: deployment,
+        temperature,
+      };
+
+      // Set apiVersion from client if available, otherwise default to empty string
+      const apiVersion: string = (client as any)?.apiVersion ?? '';
+
+      if (apiVersion && /^2024-1[2-9]|202[5-9]/.test(apiVersion)) {
+        // 2024-12-01-preview or any later version
+        params.max_completion_tokens = 4096;
+      } else {
+        params.max_tokens = 4096;
+      }
+
+      const response = await client.chat.completions.create(params);
 
       // Extract the generated text from the response
       const finalResult = response.choices?.[0]?.message?.content?.trim() ?? '';
