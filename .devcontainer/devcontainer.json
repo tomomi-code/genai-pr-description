@@ -12,7 +12,7 @@
 	// "forwardPorts": [],
 
 	// Use 'postCreateCommand' to run commands after the container is created.
-	"postCreateCommand": "npm install && npm run prepare"
+	"postCreateCommand": "npm install && npm run prepare && chmod +x .husky/pre-push"
 
 	// Configure tool-specific properties.
 	// "customizations": {},
