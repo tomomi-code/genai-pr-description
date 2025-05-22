@@ -7,7 +7,8 @@
         "build": "tsc -p tsconfig.build.json",
         "lint": "eslint .",
         "package": "npm run build && rm ./dist/index.js || true && cp ./build/index.js ./dist/ && ncc build -o dist",
-        "test": "jest"
+        "test": "jest",
+        "prepare": "husky install"
     },
     "keywords": [],
     "author": "",
@@ -30,6 +31,7 @@
         "@types/jest": "^29.5.12",
         "@types/node": "^20.14.11",
         "@vercel/ncc": "^0.38.3",
+        "husky": "^9.1.7",
         "jest": "^29.7.0",
         "jest-fetch-mock": "^3.0.3",
         "ts-node": "^10.9.2",
