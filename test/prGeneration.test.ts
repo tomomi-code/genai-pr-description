@@ -80,4 +80,30 @@ describe('generatePRDescription', () => {
     expect(mockOctokit.rest.repos.getContent).toHaveBeenCalled();
     expect(mockOctokit.rest.pulls.update).toHaveBeenCalled();
   });
+
+  it('should replace the old AI-generated section if present', async () => {
+  const oldAISection = `
+<details>
+<summary>🤖 AI-Generated PR Description (Powered by Azure OpenAI)</summary>
+
+Old AI generated content
+
+</details>
+`;
+    mockOctokit.rest.pulls.get = jest.fn().mockResolvedValue({
+      data: { body: `User intro\n${oldAISection}\nUser outro` },
+    }) as unknown as typeof mockOctokit.rest.pulls.get;
+    (mockOctokit.rest.pulls.listFiles as unknown as jest.Mock).mockResolvedValue({
+      data: [],
+    });
+
+    await generatePRDescription(mockClient, mockDeployment, mockOctokit as any);
+
+    // The old section should be replaced, not duplicated
+    const updatedBody = ((mockOctokit.rest.pulls.update as unknown) as jest.Mock).mock.calls[0][0].body;
+    expect(updatedBody).not.toContain('Old AI generated content');
+    expect(updatedBody).toMatch(/<details>[\s\S]*Generated PR description[\s\S]*<\/details>/);
+    expect(updatedBody).toContain('User intro');
+    expect(updatedBody).toContain('User outro');
+  });
 });
