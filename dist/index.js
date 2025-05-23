@@ -36328,8 +36328,33 @@ ${aiGeneratedContent}
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.isMaxCompletionTokensVersion = isMaxCompletionTokensVersion;
 exports.exponentialBackoff = exponentialBackoff;
 exports.invokeModel = invokeModel;
+/**
+ * Returns true if the API version is 2024-12-01-preview or later.
+ */
+function isMaxCompletionTokensVersion(apiVersion) {
+    // Accepts '2024-12-01-preview' and anything later
+    const minVersion = '2024-12-01-preview';
+    const parse = (v) => {
+        const [year, month, day] = v.replace('-preview', '').split('-').map(Number);
+        return { year, month, day };
+    };
+    const a = parse(apiVersion);
+    const b = parse(minVersion);
+    if (a.year === undefined || a.month === undefined || a.day === undefined ||
+        b.year === undefined || b.month === undefined || b.day === undefined) {
+        return false;
+    }
+    if (a.year > b.year)
+        return true;
+    if (a.year === b.year && a.month > b.month)
+        return true;
+    if (a.year === b.year && a.month === b.month && a.day >= b.day)
+        return true;
+    return false;
+}
 async function exponentialBackoff(fn, maxRetries, initialDelay, functionName) {
     let retries = 0;
     while (true) {
@@ -36365,14 +36390,21 @@ async function invokeModel(client, deployment, payloadInput, temperature = 0.6) 
                     content: payloadInput,
                 },
             ];
-            // Call the chat completions API using the deployment name
-            const response = await client.chat.completions.create({
+            let params = {
                 messages,
                 model: deployment,
-                max_completion_tokens: 4096,
-                // temperature: temperature
-            });
-            console.log(temperature);
+                temperature,
+            };
+            const apiVersion = client?.apiVersion ?? '';
+            if (isMaxCompletionTokensVersion(apiVersion)) {
+                params.max_completion_tokens = 4096;
+                params.temperature = temperature;
+            }
+            else {
+                params.max_tokens = 4096;
+            }
+            // Call the chat completions API using the deployment name
+            const response = await client.chat.completions.create(params);
             // Extract the generated text from the response
             const finalResult = response.choices?.[0]?.message?.content?.trim() ?? '';
             return finalResult;
