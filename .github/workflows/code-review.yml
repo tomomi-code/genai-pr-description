@@ -12,7 +12,7 @@ concurrency:
 jobs:
   review:
     runs-on: ubuntu-latest
-    environment: OpenAI_Intelligent_DevOps_o1
+    environment: OpenAI_Intelligent_DevOps
 
     permissions:
       # read repository contents and write pull request comments
@@ -52,14 +52,14 @@ jobs:
         fi
 
     - name: Intelligent GitHub Actions
-      uses: tomomi-code/genai-pr-description@model-o1
+      uses: tomomi-code/genai-pr-description@main
       with:
         # Automatic Provision: The GITHUB_TOKEN is automatically created and provided by GitHub for each workflow run. You don't need to manually create or store this token as a secret.
         github-token: ${{ secrets.GITHUB_TOKEN }}
 
         azure-openai-api-key: ${{ secrets.AZURE_OPENAI_API_KEY }}
         azure-openai-endpoint: ${{ secrets.AZURE_OPENAI_ENDPOINT }}
-        azure-openai-api-version: '2024-12-01-preview'
+        azure-openai-api-version: ${{ secrets.AZURE_OPENAI_API_VERSION }}
         azure-openai-deployment: ${{ secrets.AZURE_OPENAI_DEPLOYMENT }}
         azure-openai-temperature: '0.7'
       env:
