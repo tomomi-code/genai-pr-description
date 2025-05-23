@@ -59,7 +59,7 @@ jobs:
 
         azure-openai-api-key: ${{ secrets.AZURE_OPENAI_API_KEY }}
         azure-openai-endpoint: ${{ secrets.AZURE_OPENAI_ENDPOINT }}
-        azure-openai-version: '2024-04-01-preview'
+        azure-openai-api-version: ${{ secrets.AZURE_OPENAI_API_VERSION }}
         azure-openai-deployment: ${{ secrets.AZURE_OPENAI_DEPLOYMENT }}
         azure-openai-temperature: '0.7'
       env:

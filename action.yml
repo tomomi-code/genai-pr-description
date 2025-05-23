@@ -10,8 +10,8 @@ inputs:
   azure-openai-endpoint:
     description: 'Azure OpenAI endpoint'
     required: true
-  azure-openai-version:
-    description: 'Azure OpenAI version'
+  azure-openai-api-version:
+    description: 'Azure OpenAI API version'
     required: true
     default: '2023-05-15'
   azure-openai-deployment:

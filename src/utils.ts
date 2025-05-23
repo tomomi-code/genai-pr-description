@@ -15,6 +15,30 @@ export interface PullRequest {
   };
 }
 
+/**
+ * Returns true if the API version is 2024-12-01-preview or later.
+ */
+export function isNewerApiVersion(apiVersion: string): boolean {
+  // Accepts '2024-12-01-preview' and anything later
+  const minVersion = '2024-12-01-preview';
+  const parse = (v: string) => {
+    const [year, month, day] = v.replace('-preview', '').split('-').map(Number);
+    return { year, month, day };
+  };
+  const a = parse(apiVersion);
+  const b = parse(minVersion);
+  if (
+    a.year === undefined || a.month === undefined || a.day === undefined ||
+    b.year === undefined || b.month === undefined || b.day === undefined
+  ) {
+    return false;
+  }
+  if (a.year > b.year) return true;
+  if (a.year === b.year && a.month > b.month) return true;
+  if (a.year === b.year && a.month === b.month && a.day >= b.day) return true;
+  return false;
+}
+
 export async function exponentialBackoff<T>(
   fn: () => Promise<T>,
   maxRetries: number,
@@ -57,13 +81,22 @@ export async function invokeModel(client: AzureOpenAI, deployment: string, paylo
         },
       ];
 
+      let params: any = {
+        messages,
+        model: deployment,
+      };
+
+      const apiVersion: string = (client as any)?.apiVersion ?? '';
+
+      if (isNewerApiVersion(apiVersion)) {
+        params.max_completion_tokens = 4096;
+      } else {
+        params.max_tokens = 4096;
+        params.temperature = temperature;
+      }
+
       // Call the chat completions API using the deployment name
-      const response = await client.chat.completions.create({ 
-        messages, 
-        model: deployment, 
-        max_tokens: 4096,
-        temperature: temperature
-      });
+      const response = await client.chat.completions.create(params);
 
       // Extract the generated text from the response
       const finalResult = response.choices?.[0]?.message?.content?.trim() ?? '';
