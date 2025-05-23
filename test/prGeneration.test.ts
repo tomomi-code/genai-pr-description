@@ -83,12 +83,14 @@ describe('generatePRDescription', () => {
 
   it('should replace the old AI-generated section if present', async () => {
   const oldAISection = `
+<!-- AI-GENERATED-PR-DESCRIPTION-START -->
 <details>
 <summary>🤖 AI-Generated PR Description (Powered by Azure OpenAI)</summary>
 
 Old AI generated content
 
 </details>
+<!-- AI-GENERATED-PR-DESCRIPTION-END -->
 `;
     mockOctokit.rest.pulls.get = jest.fn().mockResolvedValue({
       data: { body: `User intro\n${oldAISection}\nUser outro` },
