@@ -62,7 +62,7 @@ export async function invokeModel(client: AzureOpenAI, deployment: string, paylo
         messages, 
         model: deployment, 
         max_completion_tokens: 4096,
-        temperature: temperature
+        // temperature: temperature
       });
 
       // Extract the generated text from the response
