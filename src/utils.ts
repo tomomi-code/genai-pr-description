@@ -65,6 +65,8 @@ export async function invokeModel(client: AzureOpenAI, deployment: string, paylo
         // temperature: temperature
       });
 
+      console.log(temperature);
+
       // Extract the generated text from the response
       const finalResult = response.choices?.[0]?.message?.content?.trim() ?? '';
       return finalResult;

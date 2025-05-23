@@ -36370,8 +36370,9 @@ async function invokeModel(client, deployment, payloadInput, temperature = 0.6) 
                 messages,
                 model: deployment,
                 max_completion_tokens: 4096,
-                temperature: temperature
+                // temperature: temperature
             });
+            console.log(temperature);
             // Extract the generated text from the response
             const finalResult = response.choices?.[0]?.message?.content?.trim() ?? '';
             return finalResult;
