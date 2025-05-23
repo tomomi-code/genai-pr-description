@@ -18,7 +18,7 @@ export interface PullRequest {
 /**
  * Returns true if the API version is 2024-12-01-preview or later.
  */
-export function isMaxCompletionTokensVersion(apiVersion: string): boolean {
+export function isNewerApiVersion(apiVersion: string): boolean {
   // Accepts '2024-12-01-preview' and anything later
   const minVersion = '2024-12-01-preview';
   const parse = (v: string) => {
@@ -84,12 +84,11 @@ export async function invokeModel(client: AzureOpenAI, deployment: string, paylo
       let params: any = {
         messages,
         model: deployment,
-        temperature,
       };
 
       const apiVersion: string = (client as any)?.apiVersion ?? '';
 
-      if (isMaxCompletionTokensVersion(apiVersion)) {
+      if (isNewerApiVersion(apiVersion)) {
         params.max_completion_tokens = 4096;
       } else {
         params.max_tokens = 4096;

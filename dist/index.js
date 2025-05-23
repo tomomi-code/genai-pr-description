@@ -36328,13 +36328,13 @@ ${aiGeneratedContent}
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.isMaxCompletionTokensVersion = isMaxCompletionTokensVersion;
+exports.isNewerApiVersion = isNewerApiVersion;
 exports.exponentialBackoff = exponentialBackoff;
 exports.invokeModel = invokeModel;
 /**
  * Returns true if the API version is 2024-12-01-preview or later.
  */
-function isMaxCompletionTokensVersion(apiVersion) {
+function isNewerApiVersion(apiVersion) {
     // Accepts '2024-12-01-preview' and anything later
     const minVersion = '2024-12-01-preview';
     const parse = (v) => {
@@ -36393,10 +36393,9 @@ async function invokeModel(client, deployment, payloadInput, temperature = 0.6) 
             let params = {
                 messages,
                 model: deployment,
-                temperature,
             };
             const apiVersion = client?.apiVersion ?? '';
-            if (isMaxCompletionTokensVersion(apiVersion)) {
+            if (isNewerApiVersion(apiVersion)) {
                 params.max_completion_tokens = 4096;
             }
             else {
