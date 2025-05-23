@@ -91,9 +91,9 @@ export async function invokeModel(client: AzureOpenAI, deployment: string, paylo
 
       if (isMaxCompletionTokensVersion(apiVersion)) {
         params.max_completion_tokens = 4096;
-        params.temperature = temperature;
       } else {
         params.max_tokens = 4096;
+        params.temperature = temperature;
       }
 
       // Call the chat completions API using the deployment name
