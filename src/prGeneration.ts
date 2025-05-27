@@ -4,6 +4,7 @@ import { AzureOpenAI } from 'openai';
 import { invokeModel, PullRequest } from '@/src/utils';
 
 const PR_DESCRIPTION_HEADER = 'AI-Generated PR Description (Powered by Azure OpenAI)';
+const AI_GENERATED_PR_DESCRIPTION = 'AI-GENERATED-PR-DESCRIPTION';
 
 const pr_generation_prompt =
 `
@@ -148,20 +149,22 @@ The file changes summary is as follows:
 
   // Create the foldable AI-generated content
   const foldableContent = `
+<!-- ${AI_GENERATED_PR_DESCRIPTION}-START -->
 <details>
 <summary>🤖 ${PR_DESCRIPTION_HEADER}</summary>
 
 ${aiGeneratedContent}
 
 </details>
+<!-- ${AI_GENERATED_PR_DESCRIPTION}-END -->
 `;
 
   let finalDescription = originalDescription;
 
-  // If the PR_DESCRIPTION_HEADER exists, remove the entire <details>...</details> block containing it
-  if (originalDescription.includes(PR_DESCRIPTION_HEADER)) {
+  // If the AI-GENERATED-PR-DESCRIPTION exists, remove the entire <details>...</details> block containing it
+  if (originalDescription.includes(`<!-- ${AI_GENERATED_PR_DESCRIPTION}-START -->`)) {
     const aiSectionRegex = new RegExp(
-      `<details[^>]*>\\s*<summary[^>]*>[^<]*${PR_DESCRIPTION_HEADER.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}[^<]*<\\/summary>[\\s\\S]*?<\\/details>`,
+      `<!-- ${AI_GENERATED_PR_DESCRIPTION}-START -->[\\s\\S]*?<!-- ${AI_GENERATED_PR_DESCRIPTION}-END -->`,
       'gi'
     );
     finalDescription = originalDescription.replace(aiSectionRegex, '').trim();

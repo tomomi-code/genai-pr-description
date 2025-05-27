@@ -36165,6 +36165,7 @@ const github_1 = __nccwpck_require__(3228);
 // using abosolute path to import the functions from testGenerator.ts
 const utils_1 = __nccwpck_require__(1798);
 const PR_DESCRIPTION_HEADER = 'AI-Generated PR Description (Powered by Azure OpenAI)';
+const AI_GENERATED_PR_DESCRIPTION = 'AI-GENERATED-PR-DESCRIPTION';
 const pr_generation_prompt = `
 <task context>
 You are a developer tasked with creating a pull request (PR) for a software project. Your primary goal is to provide a clear and informative description of the changes you are proposing.
@@ -36295,17 +36296,19 @@ The file changes summary is as follows:
     const aiGeneratedContent = newPrDescription + updatedDescription;
     // Create the foldable AI-generated content
     const foldableContent = `
+<!-- ${AI_GENERATED_PR_DESCRIPTION}-START -->
 <details>
 <summary>🤖 ${PR_DESCRIPTION_HEADER}</summary>
 
 ${aiGeneratedContent}
 
 </details>
+<!-- ${AI_GENERATED_PR_DESCRIPTION}-END -->
 `;
     let finalDescription = originalDescription;
-    // If the PR_DESCRIPTION_HEADER exists, remove the entire <details>...</details> block containing it
-    if (originalDescription.includes(PR_DESCRIPTION_HEADER)) {
-        const aiSectionRegex = new RegExp(`<details[^>]*>\\s*<summary[^>]*>[^<]*${PR_DESCRIPTION_HEADER.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}[^<]*<\\/summary>[\\s\\S]*?<\\/details>`, 'gi');
+    // If the AI-GENERATED-PR-DESCRIPTION exists, remove the entire <details>...</details> block containing it
+    if (originalDescription.includes(`<!-- ${AI_GENERATED_PR_DESCRIPTION}-START -->`)) {
+        const aiSectionRegex = new RegExp(`<!-- ${AI_GENERATED_PR_DESCRIPTION}-START -->[\\s\\S]*?<!-- ${AI_GENERATED_PR_DESCRIPTION}-END -->`, 'gi');
         finalDescription = originalDescription.replace(aiSectionRegex, '').trim();
     }
     // Always append the new foldableContent
