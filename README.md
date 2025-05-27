@@ -34,3 +34,51 @@ The GitHub Action will generate an AI-powered PR description and update the pull
 ---
 
 For more details, refer to the workflow file at `.github/workflows/code-review.yml` in this repository.
+
+## Development Guide
+
+### Dev Container
+
+This repository is configured for development in a [dev container](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers).
+When you open the project in a dev container, all dependencies are installed automatically, and Husky git hooks are set up via the `postCreateCommand` in `.devcontainer/devcontainer.json`.
+
+### Running Tests
+
+To run the test suite locally or in the dev container:
+
+```sh
+npm test
+```
+
+### Linting
+
+To check code style and lint for errors:
+
+```sh
+npm run lint
+```
+
+### Pre-push Hook
+
+A [Husky](https://typicode.github.io/husky/) pre-push hook is configured.  
+Before every `git push`, the following will run automatically:
+
+- `npm run lint`
+- `npm test`
+- `npm run package`
+
+If any of these steps fail, the push will be aborted.
+
+If you need to (re)install Husky hooks manually, run:
+
+```sh
+npm run prepare
+```
+
+### Packaging
+
+To build and package the action (generates the `dist/` directory):
+
+```sh
+npm run package
+```
