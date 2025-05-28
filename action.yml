@@ -21,7 +21,7 @@ inputs:
     description: 'Azure OpenAI temperature'
     required: false
     default: '0.7'
-  pr-template:
+  pr-template-b64:
     description: 'Pull request template content'
     required: false
 
