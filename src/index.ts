@@ -19,7 +19,8 @@ async function run(): Promise<void> {
     const endpoint = core.getInput('azure-openai-endpoint');
     const apiVersion: string = core.getInput('azure-openai-api-version') || '2024-04-01-preview'; // Replace with your Azure OpenAI API version
     const deployment: string = core.getInput('azure-openai-deployment') || 'gpt-35-turbo'; // Replace with your Azure OpenAI deployment name
-    const prTemplate = core.getInput('pr-template');
+    const prTemplateB64 = core.getInput('pr-template-b64');
+    const prTemplate = prTemplateB64 ? Buffer.from(prTemplateB64, 'base64').toString('utf-8') : '';
 
     console.log(`GitHub Token: ${githubToken ? 'Token is set' : 'Token is not set'}`);
 

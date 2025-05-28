@@ -117,9 +117,17 @@ export async function generatePRDescription(
   }));
 
   // Generate the new PR description
-  const payloadInput = prTemplate
-    ? prTemplate.replace('[Insert the code change to be referenced in the PR description]', fileNameAndStatus.join('\n'))
-    : pr_generation_prompt.replace('[Insert the code change to be referenced in the PR description]', fileNameAndStatus.join('\n'));
+  let payloadInput: string;
+  if (prTemplate) {
+    // If a template is provided and it's free format, append code changes at the end
+    payloadInput = `${prTemplate}\n\n## Code Changes\n${fileNameAndStatus.join('\n')}`;
+  } else {
+    // Use the default prompt and insert code changes at the placeholder
+    payloadInput = pr_generation_prompt.replace(
+      '[Insert the code change to be referenced in the PR description]',
+      fileNameAndStatus.join('\n')
+    );
+  }
   const newPrDescription = await invokeModel(client, deployment, payloadInput);
 
   // Fix the table column width using div element and inline HTML

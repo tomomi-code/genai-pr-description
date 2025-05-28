@@ -55,7 +55,8 @@ async function run() {
         const endpoint = core.getInput('azure-openai-endpoint');
         const apiVersion = core.getInput('azure-openai-api-version') || '2024-04-01-preview'; // Replace with your Azure OpenAI API version
         const deployment = core.getInput('azure-openai-deployment') || 'gpt-35-turbo'; // Replace with your Azure OpenAI deployment name
-        const prTemplate = core.getInput('pr-template');
+        const prTemplateB64 = core.getInput('pr-template-b64');
+        const prTemplate = prTemplateB64 ? Buffer.from(prTemplateB64, 'base64').toString('utf-8') : '';
         console.log(`GitHub Token: ${githubToken ? 'Token is set' : 'Token is not set'}`);
         // Azure configuration
         console.log(`apiKey: ${apiKey}`);
@@ -36264,9 +36265,15 @@ async function generatePRDescription(client, deployment, octokit, prTemplate) {
         }
     }));
     // Generate the new PR description
-    const payloadInput = prTemplate
-        ? prTemplate.replace('[Insert the code change to be referenced in the PR description]', fileNameAndStatus.join('\n'))
-        : pr_generation_prompt.replace('[Insert the code change to be referenced in the PR description]', fileNameAndStatus.join('\n'));
+    let payloadInput;
+    if (prTemplate) {
+        // If a template is provided and it's free format, append code changes at the end
+        payloadInput = `${prTemplate}\n\n## Code Changes\n${fileNameAndStatus.join('\n')}`;
+    }
+    else {
+        // Use the default prompt and insert code changes at the placeholder
+        payloadInput = pr_generation_prompt.replace('[Insert the code change to be referenced in the PR description]', fileNameAndStatus.join('\n'));
+    }
     const newPrDescription = await (0, utils_1.invokeModel)(client, deployment, payloadInput);
     // Fix the table column width using div element and inline HTML
     const fixedDescription = `
