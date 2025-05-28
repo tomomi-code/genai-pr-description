@@ -15,11 +15,11 @@ async function run(): Promise<void> {
 
     const githubToken = core.getInput('github-token');
 
-    // TODO replace with token
     const apiKey = core.getInput('azure-openai-api-key');
     const endpoint = core.getInput('azure-openai-endpoint');
     const apiVersion: string = core.getInput('azure-openai-api-version') || '2024-04-01-preview'; // Replace with your Azure OpenAI API version
     const deployment: string = core.getInput('azure-openai-deployment') || 'gpt-35-turbo'; // Replace with your Azure OpenAI deployment name
+    const prTemplate = core.getInput('pr-template');
 
     console.log(`GitHub Token: ${githubToken ? 'Token is set' : 'Token is not set'}`);
 
@@ -47,7 +47,7 @@ async function run(): Promise<void> {
     console.log(`Reviewing PR #${pullRequest.number} in ${repo.owner}/${repo.repo}`);
 
     // Generate PR description
-    await generatePRDescription(azClient, deployment, octokit);
+    await generatePRDescription(azClient, deployment, octokit, prTemplate);
 
   } catch (error) {
     if (error instanceof Error) {

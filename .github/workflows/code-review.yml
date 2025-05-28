@@ -51,6 +51,22 @@ jobs:
           echo "GitHub Token is not set"
         fi
 
+    - name: Find PR template
+      id: pr_template
+      run: |
+        if [ -f .github/pull_request_template.md ]; then
+          cat .github/pull_request_template.md > pr_template.txt
+        elif [ -f pull_request_template.md ]; then
+          cat pull_request_template.md > pr_template.txt
+        elif [ -f .github/PULL_REQUEST_TEMPLATE/pull_request_template.md ]; then
+          cat .github/PULL_REQUEST_TEMPLATE/pull_request_template.md > pr_template.txt
+        else
+          echo "" > pr_template.txt
+        fi
+        echo "template<<EOF" >> $GITHUB_OUTPUT
+        cat pr_template.txt >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+
     - name: Intelligent GitHub Actions
       uses: tomomi-code/genai-pr-description@main
       with:
@@ -62,5 +78,6 @@ jobs:
         azure-openai-api-version: ${{ secrets.AZURE_OPENAI_API_VERSION }}
         azure-openai-deployment: ${{ secrets.AZURE_OPENAI_DEPLOYMENT }}
         azure-openai-temperature: '0.7'
+        pr-template: ${{ steps.pr_template.outputs.template }}
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

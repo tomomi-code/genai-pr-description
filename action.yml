@@ -21,6 +21,9 @@ inputs:
     description: 'Azure OpenAI temperature'
     required: false
     default: '0.7'
+  pr-template:
+    description: 'Pull request template content'
+    required: false
 
 runs:
   using: 'node20'

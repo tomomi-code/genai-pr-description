@@ -68,7 +68,12 @@ async function generateFileSummary(client: AzureOpenAI, deployment: string, patc
   return await invokeModel(client, deployment, prompt);
 }
 
-export async function generatePRDescription(client: AzureOpenAI, deployment: string, octokit: ReturnType<typeof getOctokit>): Promise<void> {
+export async function generatePRDescription(
+    client: AzureOpenAI, 
+    deployment: string, 
+    octokit: ReturnType<typeof getOctokit>,
+    prTemplate?: string
+  ): Promise<void> {
   const pullRequest = context.payload.pull_request as PullRequest;
   const repo = context.repo;
 
@@ -111,10 +116,10 @@ export async function generatePRDescription(client: AzureOpenAI, deployment: str
     }
   }));
 
-  const prDescriptionTemplate = pr_generation_prompt.replace('[Insert the code change to be referenced in the PR description]', fileNameAndStatus.join('\n'));
-
   // Generate the new PR description
-  const payloadInput = prDescriptionTemplate;
+  const payloadInput = prTemplate
+    ? prTemplate.replace('[Insert the code change to be referenced in the PR description]', fileNameAndStatus.join('\n'))
+    : pr_generation_prompt.replace('[Insert the code change to be referenced in the PR description]', fileNameAndStatus.join('\n'));
   const newPrDescription = await invokeModel(client, deployment, payloadInput);
 
   // Fix the table column width using div element and inline HTML
