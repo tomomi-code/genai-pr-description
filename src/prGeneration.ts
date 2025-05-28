@@ -120,7 +120,10 @@ export async function generatePRDescription(
   let payloadInput: string;
   if (prTemplate) {
     // If a template is provided and it's free format, append code changes at the end
-    payloadInput = `${prTemplate}\n\n## Code Changes\n${fileNameAndStatus.join('\n')}`;
+    payloadInput =
+      'Use the following PR template to generate a pull request description for these code changes:\n\n' +
+      prTemplate +
+      `\n\n## Code Changes\n${fileNameAndStatus.join('\n')}`;
   } else {
     // Use the default prompt and insert code changes at the placeholder
     payloadInput = pr_generation_prompt.replace(
