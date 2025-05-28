@@ -51,11 +51,11 @@ async function run() {
     try {
         console.log('Starting the GitHub Action... version 0.1d');
         const githubToken = core.getInput('github-token');
-        // TODO replace with token
         const apiKey = core.getInput('azure-openai-api-key');
         const endpoint = core.getInput('azure-openai-endpoint');
         const apiVersion = core.getInput('azure-openai-api-version') || '2024-04-01-preview'; // Replace with your Azure OpenAI API version
         const deployment = core.getInput('azure-openai-deployment') || 'gpt-35-turbo'; // Replace with your Azure OpenAI deployment name
+        const prTemplate = core.getInput('pr-template');
         console.log(`GitHub Token: ${githubToken ? 'Token is set' : 'Token is not set'}`);
         // Azure configuration
         console.log(`apiKey: ${apiKey}`);
@@ -75,7 +75,7 @@ async function run() {
         const repo = github_1.context.repo;
         console.log(`Reviewing PR #${pullRequest.number} in ${repo.owner}/${repo.repo}`);
         // Generate PR description
-        await (0, prGeneration_1.generatePRDescription)(azClient, deployment, octokit);
+        await (0, prGeneration_1.generatePRDescription)(azClient, deployment, octokit, prTemplate);
     }
     catch (error) {
         if (error instanceof Error) {
@@ -36222,7 +36222,7 @@ async function generateFileSummary(client, deployment, patch) {
     const prompt = `Summarize the following code changes into concise and clear description in less than 30 words:\n\n${patch}`;
     return await (0, utils_1.invokeModel)(client, deployment, prompt);
 }
-async function generatePRDescription(client, deployment, octokit) {
+async function generatePRDescription(client, deployment, octokit, prTemplate) {
     const pullRequest = github_1.context.payload.pull_request;
     const repo = github_1.context.repo;
     // Fetch the current PR description
@@ -36263,9 +36263,10 @@ async function generatePRDescription(client, deployment, octokit) {
             return `${file.filename}: error`;
         }
     }));
-    const prDescriptionTemplate = pr_generation_prompt.replace('[Insert the code change to be referenced in the PR description]', fileNameAndStatus.join('\n'));
     // Generate the new PR description
-    const payloadInput = prDescriptionTemplate;
+    const payloadInput = prTemplate
+        ? prTemplate.replace('[Insert the code change to be referenced in the PR description]', fileNameAndStatus.join('\n'))
+        : pr_generation_prompt.replace('[Insert the code change to be referenced in the PR description]', fileNameAndStatus.join('\n'));
     const newPrDescription = await (0, utils_1.invokeModel)(client, deployment, payloadInput);
     // Fix the table column width using div element and inline HTML
     const fixedDescription = `
