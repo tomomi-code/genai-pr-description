@@ -54,21 +54,23 @@ jobs:
     - name: Find PR template
       id: pr_template
       run: |
+        TEMPLATE_PATH=""
         if [ -f .github/pull_request_template.md ]; then
-          cat .github/pull_request_template.md > pr_template.txt
+          TEMPLATE_PATH=".github/pull_request_template.md"
         elif [ -f pull_request_template.md ]; then
-          cat pull_request_template.md > pr_template.txt
+          TEMPLATE_PATH="pull_request_template.md"
         elif [ -f .github/PULL_REQUEST_TEMPLATE/pull_request_template.md ]; then
-          cat .github/PULL_REQUEST_TEMPLATE/pull_request_template.md > pr_template.txt
-        else
-          echo "" > pr_template.txt
+          TEMPLATE_PATH=".github/PULL_REQUEST_TEMPLATE/pull_request_template.md"
         fi
-        echo "template<<EOF" >> $GITHUB_OUTPUT
-        cat pr_template.txt >> $GITHUB_OUTPUT
-        echo "EOF" >> $GITHUB_OUTPUT
+        if [ -n "$TEMPLATE_PATH" ]; then
+          TEMPLATE_B64=$(base64 -w 0 "$TEMPLATE_PATH")
+          echo "template_b64=$TEMPLATE_B64" >> $GITHUB_OUTPUT
+        else
+          echo "template_b64=" >> $GITHUB_OUTPUT
+        fi
 
     - name: Intelligent GitHub Actions
-      uses: tomomi-code/genai-pr-description@main
+      uses: tomomi-code/genai-pr-description@use-pr-template
       with:
         # Automatic Provision: The GITHUB_TOKEN is automatically created and provided by GitHub for each workflow run. You don't need to manually create or store this token as a secret.
         github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -78,6 +80,6 @@ jobs:
         azure-openai-api-version: ${{ secrets.AZURE_OPENAI_API_VERSION }}
         azure-openai-deployment: ${{ secrets.AZURE_OPENAI_DEPLOYMENT }}
         azure-openai-temperature: '0.7'
-        pr-template: ${{ steps.pr_template.outputs.template }}
+        pr-template-b64: ${{ steps.pr_template.outputs.template_b64 }}
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
