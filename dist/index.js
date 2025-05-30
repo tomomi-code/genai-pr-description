@@ -51,11 +51,12 @@ async function run() {
     try {
         console.log('Starting the GitHub Action... version 0.1d');
         const githubToken = core.getInput('github-token');
-        // TODO replace with token
         const apiKey = core.getInput('azure-openai-api-key');
         const endpoint = core.getInput('azure-openai-endpoint');
         const apiVersion = core.getInput('azure-openai-api-version') || '2024-04-01-preview'; // Replace with your Azure OpenAI API version
         const deployment = core.getInput('azure-openai-deployment') || 'gpt-35-turbo'; // Replace with your Azure OpenAI deployment name
+        const prTemplateB64 = core.getInput('pr-template-b64');
+        const prTemplate = prTemplateB64 ? Buffer.from(prTemplateB64, 'base64').toString('utf-8') : '';
         console.log(`GitHub Token: ${githubToken ? 'Token is set' : 'Token is not set'}`);
         // Azure configuration
         console.log(`apiKey: ${apiKey}`);
@@ -75,7 +76,7 @@ async function run() {
         const repo = github_1.context.repo;
         console.log(`Reviewing PR #${pullRequest.number} in ${repo.owner}/${repo.repo}`);
         // Generate PR description
-        await (0, prGeneration_1.generatePRDescription)(azClient, deployment, octokit);
+        await (0, prGeneration_1.generatePRDescription)(azClient, deployment, octokit, prTemplate);
     }
     catch (error) {
         if (error instanceof Error) {
@@ -36203,7 +36204,6 @@ Provide your PR description in the following format:
 - [ ] This change requires a documentation update
 </output_format>
 `;
-let statsSummary = [];
 function calculateFilePatchNumLines(fileChange) {
     const lines = fileChange.split('\n');
     let added = 0;
@@ -36218,11 +36218,58 @@ function calculateFilePatchNumLines(fileChange) {
     });
     return { added, removed };
 }
+function getFileNameAndStatusForTemplate(files) {
+    const statsSummaryLocal = [];
+    const fileNameAndStatus = files.map(file => {
+        if (file.status === 'removed') {
+            const { removed } = calculateFilePatchNumLines(file.patch);
+            statsSummaryLocal.push({ file: file.filename, added: 0, removed: removed, summary: 'This file is removed in this PR' });
+            return `${file.filename}: removed`;
+        }
+        else {
+            const { added, removed } = calculateFilePatchNumLines(file.patch);
+            statsSummaryLocal.push({ file: file.filename, added: added, removed: removed, summary: '' });
+            return `${file.filename}: ${file.status}`;
+        }
+    });
+    return { fileNameAndStatus, statsSummary: statsSummaryLocal };
+}
 async function generateFileSummary(client, deployment, patch) {
     const prompt = `Summarize the following code changes into concise and clear description in less than 30 words:\n\n${patch}`;
     return await (0, utils_1.invokeModel)(client, deployment, prompt);
 }
-async function generatePRDescription(client, deployment, octokit) {
+async function getFileNameAndStatusWithSummary(files, client, deployment, octokit, repo, pullRequest) {
+    const statsSummaryLocal = [];
+    const fileNameAndStatus = await Promise.all(files.map(async (file) => {
+        try {
+            if (file.status === 'removed') {
+                const { removed } = calculateFilePatchNumLines(file.patch);
+                statsSummaryLocal.push({ file: file.filename, added: 0, removed: removed, summary: 'This file is removed in this PR' });
+                return `${file.filename}: removed`;
+            }
+            else {
+                await octokit.rest.repos.getContent({
+                    ...repo,
+                    path: file.filename,
+                    ref: pullRequest.head.sha,
+                });
+                const { added, removed } = calculateFilePatchNumLines(file.patch);
+                const summary = await generateFileSummary(client, deployment, file.patch);
+                statsSummaryLocal.push({ file: file.filename, added: added, removed: removed, summary: summary });
+                return `${file.filename}: ${file.status}`;
+            }
+        }
+        catch (error) {
+            if (error.status === 404) {
+                console.log(`File ${file.filename} not found in the repository`);
+                return `${file.filename}: not found`;
+            }
+            return `${file.filename}: error`;
+        }
+    }));
+    return { fileNameAndStatus, statsSummary: statsSummaryLocal };
+}
+async function generatePRDescription(client, deployment, octokit, prTemplate) {
     const pullRequest = github_1.context.payload.pull_request;
     const repo = github_1.context.repo;
     // Fetch the current PR description
@@ -36236,36 +36283,31 @@ async function generatePRDescription(client, deployment, octokit) {
         ...repo,
         pull_number: pullRequest.number,
     });
-    const fileNameAndStatus = await Promise.all(files.map(async (file) => {
-        try {
-            if (file.status === 'removed') {
-                const { removed } = calculateFilePatchNumLines(file.patch);
-                statsSummary.push({ file: file.filename, added: 0, removed: removed, summary: 'This file is removed in this PR' });
-                return `${file.filename}: removed`;
-            }
-            else {
-                await octokit.rest.repos.getContent({
-                    ...repo,
-                    path: file.filename,
-                    ref: pullRequest.head.sha,
-                });
-                const { added, removed } = calculateFilePatchNumLines(file.patch);
-                const summary = await generateFileSummary(client, deployment, file.patch);
-                statsSummary.push({ file: file.filename, added: added, removed: removed, summary: summary });
-                return `${file.filename}: ${file.status}`;
-            }
-        }
-        catch (error) {
-            if (error.status === 404) {
-                console.log(`File ${file.filename} not found in the repository`);
-                return `${file.filename}: not found`;
-            }
-            return `${file.filename}: error`;
-        }
-    }));
-    const prDescriptionTemplate = pr_generation_prompt.replace('[Insert the code change to be referenced in the PR description]', fileNameAndStatus.join('\n'));
+    let fileNameAndStatus = [];
+    let localStatsSummary = [];
+    if (prTemplate) {
+        const result = getFileNameAndStatusForTemplate(files);
+        fileNameAndStatus = result.fileNameAndStatus;
+        localStatsSummary = result.statsSummary;
+    }
+    else {
+        const result = await getFileNameAndStatusWithSummary(files, client, deployment, octokit, repo, pullRequest);
+        fileNameAndStatus = result.fileNameAndStatus;
+        localStatsSummary = result.statsSummary;
+    }
     // Generate the new PR description
-    const payloadInput = prDescriptionTemplate;
+    let payloadInput;
+    if (prTemplate) {
+        // If a template is provided and it's free format, append code changes at the end
+        payloadInput =
+            'Use the following PR template to generate a pull request description for these code changes:\n\n' +
+                prTemplate +
+                `\n\n## Code Changes\n${fileNameAndStatus.join('\n')}`;
+    }
+    else {
+        // Use the default prompt and insert code changes at the placeholder
+        payloadInput = pr_generation_prompt.replace('[Insert the code change to be referenced in the PR description]', fileNameAndStatus.join('\n'));
+    }
     const newPrDescription = await (0, utils_1.invokeModel)(client, deployment, payloadInput);
     // Fix the table column width using div element and inline HTML
     const fixedDescription = `
@@ -36283,12 +36325,12 @@ The file changes summary is as follows:
 
 </details>
   `;
-    const fileChangeSummary = statsSummary.map(file => {
+    const fileChangeSummary = localStatsSummary.map(file => {
         const fileName = file.file;
         const changes = `${file.added} added, ${file.removed} removed`;
         return `| ${fileName} | ${changes} | ${file.summary || ''} |`;
     }).join('\n');
-    const fileNumber = statsSummary.length.toString();
+    const fileNumber = localStatsSummary.length.toString();
     const updatedDescription = fixedDescription
         .replace('{{FILE_CHANGE_SUMMARY}}', fileChangeSummary)
         .replace('{{FILE_NUMBER}}', fileNumber);

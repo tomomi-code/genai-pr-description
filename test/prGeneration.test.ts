@@ -108,4 +108,30 @@ Old AI generated content
     expect(updatedBody).toContain('User intro');
     expect(updatedBody).toContain('User outro');
   });
+
+  it('should use the PR template if provided', async () => {
+    const prTemplate = '# My Custom PR Template\n\nSome intro text.';
+
+    // Mock API responses
+    mockOctokit.rest.pulls.get = jest.fn().mockResolvedValue({
+      data: { body: 'Original PR description' },
+    }) as unknown as typeof mockOctokit.rest.pulls.get;
+    (mockOctokit.rest.pulls.listFiles as unknown as jest.Mock).mockResolvedValue({
+      data: [
+        { filename: 'file1.ts', status: 'modified', patch: '+added line\n-removed line' },
+      ],
+    });
+
+    await generatePRDescription(mockClient, mockDeployment, mockOctokit as any, prTemplate);
+
+    // Check that invokeModel was called with the template in the prompt
+    const { invokeModel } = require('@/src/utils');
+    expect(invokeModel).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.anything(),
+      expect.stringContaining(prTemplate)
+    );
+    // Ensure it was only called once
+    expect(invokeModel).toHaveBeenCalledTimes(1);
+  });
 });

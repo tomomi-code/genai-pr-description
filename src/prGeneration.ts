@@ -45,7 +45,7 @@ Provide your PR description in the following format:
 </output_format>
 `;
 
-let statsSummary: {file: string, added: number, removed: number, summary?: string}[] = [];
+type StatsSummary = {file: string, added: number, removed: number, summary?: string}[];
 
 function calculateFilePatchNumLines(fileChange: string): { added: number, removed: number } {
   const lines = fileChange.split('\n');
@@ -63,12 +63,70 @@ function calculateFilePatchNumLines(fileChange: string): { added: number, remove
   return { added, removed };
 }
 
+function getFileNameAndStatusForTemplate(files: any[]): { fileNameAndStatus: string[], statsSummary: StatsSummary } {
+  const statsSummaryLocal: StatsSummary = [];
+  const fileNameAndStatus = files.map(file => {
+    if (file.status === 'removed') {
+      const { removed } = calculateFilePatchNumLines(file.patch as string);
+      statsSummaryLocal.push({file: file.filename, added: 0, removed: removed, summary: 'This file is removed in this PR'});
+      return `${file.filename}: removed`;
+    } else {
+      const { added, removed } = calculateFilePatchNumLines(file.patch as string);
+      statsSummaryLocal.push({file: file.filename, added: added, removed: removed, summary: ''});
+      return `${file.filename}: ${file.status}`;
+    }
+  });
+  return { fileNameAndStatus, statsSummary: statsSummaryLocal };
+}
+
 async function generateFileSummary(client: AzureOpenAI, deployment: string, patch: string): Promise<string> {
   const prompt = `Summarize the following code changes into concise and clear description in less than 30 words:\n\n${patch}`;
   return await invokeModel(client, deployment, prompt);
 }
 
-export async function generatePRDescription(client: AzureOpenAI, deployment: string, octokit: ReturnType<typeof getOctokit>): Promise<void> {
+async function getFileNameAndStatusWithSummary(
+  files: any[],
+  client: AzureOpenAI,
+  deployment: string,
+  octokit: ReturnType<typeof getOctokit>,
+  repo: any,
+  pullRequest: PullRequest
+): Promise<{ fileNameAndStatus: string[], statsSummary: StatsSummary }> {
+  const statsSummaryLocal: StatsSummary = [];
+  const fileNameAndStatus = await Promise.all(files.map(async (file) => {
+    try {
+      if (file.status === 'removed') {
+        const { removed } = calculateFilePatchNumLines(file.patch as string);
+        statsSummaryLocal.push({file: file.filename, added: 0, removed: removed, summary: 'This file is removed in this PR'});
+        return `${file.filename}: removed`;
+      } else {
+        await octokit.rest.repos.getContent({
+          ...repo,
+          path: file.filename,
+          ref: pullRequest.head.sha,
+        });
+        const { added, removed } = calculateFilePatchNumLines(file.patch as string);
+        const summary = await generateFileSummary(client, deployment, file.patch as string);
+        statsSummaryLocal.push({file: file.filename, added: added, removed: removed, summary: summary});
+        return `${file.filename}: ${file.status}`;
+      }
+    } catch (error) {
+      if ((error as any).status === 404) {
+        console.log(`File ${file.filename} not found in the repository`);
+        return `${file.filename}: not found`;
+      }
+      return `${file.filename}: error`;
+    }
+  }));
+  return { fileNameAndStatus, statsSummary: statsSummaryLocal };
+}
+
+export async function generatePRDescription(
+    client: AzureOpenAI, 
+    deployment: string, 
+    octokit: ReturnType<typeof getOctokit>,
+    prTemplate?: string
+  ): Promise<void> {
   const pullRequest = context.payload.pull_request as PullRequest;
   const repo = context.repo;
 
@@ -85,36 +143,34 @@ export async function generatePRDescription(client: AzureOpenAI, deployment: str
     pull_number: pullRequest.number,
   });
 
-  const fileNameAndStatus = await Promise.all(files.map(async (file) => {
-    try {
-      if (file.status === 'removed') {
-        const { removed } = calculateFilePatchNumLines(file.patch as string);
-        statsSummary.push({file: file.filename, added: 0, removed: removed, summary: 'This file is removed in this PR'});
-        return `${file.filename}: removed`;
-      } else {
-        await octokit.rest.repos.getContent({
-          ...repo,
-          path: file.filename,
-          ref: pullRequest.head.sha,
-        });
-        const { added, removed } = calculateFilePatchNumLines(file.patch as string);
-        const summary = await generateFileSummary(client, deployment, file.patch as string);
-        statsSummary.push({file: file.filename, added: added, removed: removed, summary: summary});
-        return `${file.filename}: ${file.status}`;
-      }
-    } catch (error) {
-      if ((error as any).status === 404) {
-        console.log(`File ${file.filename} not found in the repository`);
-        return `${file.filename}: not found`;
-      }
-      return `${file.filename}: error`;
-    }
-  }));
+  let fileNameAndStatus: string[] = [];
+  let localStatsSummary: StatsSummary = [];
 
-  const prDescriptionTemplate = pr_generation_prompt.replace('[Insert the code change to be referenced in the PR description]', fileNameAndStatus.join('\n'));
-
+  if (prTemplate) {
+    const result = getFileNameAndStatusForTemplate(files);
+    fileNameAndStatus = result.fileNameAndStatus;
+    localStatsSummary = result.statsSummary;
+  } else {
+    const result = await getFileNameAndStatusWithSummary(files, client, deployment, octokit, repo, pullRequest);
+    fileNameAndStatus = result.fileNameAndStatus;
+    localStatsSummary = result.statsSummary;
+  }
+  
   // Generate the new PR description
-  const payloadInput = prDescriptionTemplate;
+  let payloadInput: string;
+  if (prTemplate) {
+    // If a template is provided and it's free format, append code changes at the end
+    payloadInput =
+      'Use the following PR template to generate a pull request description for these code changes:\n\n' +
+      prTemplate +
+      `\n\n## Code Changes\n${fileNameAndStatus.join('\n')}`;
+  } else {
+    // Use the default prompt and insert code changes at the placeholder
+    payloadInput = pr_generation_prompt.replace(
+      '[Insert the code change to be referenced in the PR description]',
+      fileNameAndStatus.join('\n')
+    );
+  }
   const newPrDescription = await invokeModel(client, deployment, payloadInput);
 
   // Fix the table column width using div element and inline HTML
@@ -134,12 +190,12 @@ The file changes summary is as follows:
 </details>
   `;
 
-  const fileChangeSummary = statsSummary.map(file => {
+  const fileChangeSummary = localStatsSummary.map(file => {
     const fileName = file.file;
     const changes = `${file.added} added, ${file.removed} removed`;
     return `| ${fileName} | ${changes} | ${file.summary || ''} |`;
   }).join('\n');
-  const fileNumber = statsSummary.length.toString();
+  const fileNumber = localStatsSummary.length.toString();
   const updatedDescription = fixedDescription
     .replace('{{FILE_CHANGE_SUMMARY}}', fileChangeSummary)
     .replace('{{FILE_NUMBER}}', fileNumber);
