@@ -36188,6 +36188,8 @@ Please include a summary of the changes in one of the following categories:
 - Breaking change (fix or feature that would cause existing functionality to not work as expected)
 - This change requires a documentation update
 
+<strong>Also, clearly explain WHY these changes are being made (the purpose of the PR). The WHY may include multiple reasons, such as fixing bugs, refactoring, or adding new features. Be explicit about the motivations and goals behind this PR.</strong>
+
 Please also include relevant motivation and context. List any dependencies that are required for this change.
 </detailed_task_description>
 
@@ -36195,6 +36197,8 @@ Please also include relevant motivation and context. List any dependencies that 
 Provide your PR description in the following format:
 # Description
 [Insert the PR description here]
+
+[Clearly state all the reasons and motivations for this PR, such as bug fixes, refactoring, new features, etc.]
 
 ## Type of change
 [Select one of the following options in the checkbox]
@@ -36238,7 +36242,7 @@ async function generateFileSummary(client, deployment, patch) {
     const prompt = `Summarize the following code changes into concise and clear description in less than 30 words:\n\n${patch}`;
     return await (0, utils_1.invokeModel)(client, deployment, prompt);
 }
-async function getFileNameAndStatusWithSummary(files, client, deployment, octokit, repo, pullRequest) {
+async function getFileNameAndStatusWithSummary(files, client, deployment) {
     const statsSummaryLocal = [];
     const fileNameAndStatus = await Promise.all(files.map(async (file) => {
         try {
@@ -36248,11 +36252,6 @@ async function getFileNameAndStatusWithSummary(files, client, deployment, octoki
                 return `${file.filename}: removed`;
             }
             else {
-                await octokit.rest.repos.getContent({
-                    ...repo,
-                    path: file.filename,
-                    ref: pullRequest.head.sha,
-                });
                 const { added, removed } = calculateFilePatchNumLines(file.patch);
                 const summary = await generateFileSummary(client, deployment, file.patch);
                 statsSummaryLocal.push({ file: file.filename, added: added, removed: removed, summary: summary });
@@ -36291,7 +36290,7 @@ async function generatePRDescription(client, deployment, octokit, prTemplate) {
         localStatsSummary = result.statsSummary;
     }
     else {
-        const result = await getFileNameAndStatusWithSummary(files, client, deployment, octokit, repo, pullRequest);
+        const result = await getFileNameAndStatusWithSummary(files, client, deployment);
         fileNameAndStatus = result.fileNameAndStatus;
         localStatsSummary = result.statsSummary;
     }
