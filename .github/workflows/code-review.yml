@@ -70,7 +70,7 @@ jobs:
         fi
 
     - name: Intelligent GitHub Actions
-      uses: tomomi-code/genai-pr-description@main
+      uses: tomomi-code/genai-pr-description@remove-unused-code
       with:
         # Automatic Provision: The GITHUB_TOKEN is automatically created and provided by GitHub for each workflow run. You don't need to manually create or store this token as a secret.
         github-token: ${{ secrets.GITHUB_TOKEN }}
