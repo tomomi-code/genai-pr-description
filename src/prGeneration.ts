@@ -22,13 +22,13 @@ This pull request includes the following changes, in format of file name: file s
 </code_change>
 
 <detailed_task_description>
+<strong>At the very beginning of the PR description, clearly explain WHY (the purpose) this PR is being created. The WHY may include several reasons, such as fixing bugs, refactoring, or adding new features. Be explicit about the motivations and goals behind this PR, and make it part of the main description.</strong>
+
 Please include a summary of the changes in one of the following categories:
 - Bug fix (non-breaking change which fixes an issue)
 - New feature (non-breaking change which adds functionality)
 - Breaking change (fix or feature that would cause existing functionality to not work as expected)
 - This change requires a documentation update
-
-<strong>Also, clearly explain WHY these changes are being made (the purpose of the PR). The WHY may include multiple reasons, such as fixing bugs, refactoring, or adding new features. Be explicit about the motivations and goals behind this PR.</strong>
 
 Please also include relevant motivation and context. List any dependencies that are required for this change.
 </detailed_task_description>
@@ -36,9 +36,7 @@ Please also include relevant motivation and context. List any dependencies that 
 <output_format>
 Provide your PR description in the following format:
 # Description
-[Insert the PR description here]
-
-[Clearly state all the reasons and motivations for this PR, such as bug fixes, refactoring, new features, etc.]
+[At the beginning, clearly state all the reasons and motivations for this PR (the WHY), such as bug fixes, refactoring, new features, etc. Then continue with the rest of the PR description.]
 
 ## Type of change
 [Select one of the following options in the checkbox]
