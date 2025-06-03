@@ -36238,7 +36238,7 @@ async function generateFileSummary(client, deployment, patch) {
     const prompt = `Summarize the following code changes into concise and clear description in less than 30 words:\n\n${patch}`;
     return await (0, utils_1.invokeModel)(client, deployment, prompt);
 }
-async function getFileNameAndStatusWithSummary(files, client, deployment, octokit, repo, pullRequest) {
+async function getFileNameAndStatusWithSummary(files, client, deployment) {
     const statsSummaryLocal = [];
     const fileNameAndStatus = await Promise.all(files.map(async (file) => {
         try {
@@ -36248,11 +36248,6 @@ async function getFileNameAndStatusWithSummary(files, client, deployment, octoki
                 return `${file.filename}: removed`;
             }
             else {
-                await octokit.rest.repos.getContent({
-                    ...repo,
-                    path: file.filename,
-                    ref: pullRequest.head.sha,
-                });
                 const { added, removed } = calculateFilePatchNumLines(file.patch);
                 const summary = await generateFileSummary(client, deployment, file.patch);
                 statsSummaryLocal.push({ file: file.filename, added: added, removed: removed, summary: summary });
@@ -36291,7 +36286,7 @@ async function generatePRDescription(client, deployment, octokit, prTemplate) {
         localStatsSummary = result.statsSummary;
     }
     else {
-        const result = await getFileNameAndStatusWithSummary(files, client, deployment, octokit, repo, pullRequest);
+        const result = await getFileNameAndStatusWithSummary(files, client, deployment);
         fileNameAndStatus = result.fileNameAndStatus;
         localStatsSummary = result.statsSummary;
     }

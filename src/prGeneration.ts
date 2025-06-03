@@ -88,9 +88,6 @@ async function getFileNameAndStatusWithSummary(
   files: any[],
   client: AzureOpenAI,
   deployment: string,
-  octokit: ReturnType<typeof getOctokit>,
-  repo: any,
-  pullRequest: PullRequest
 ): Promise<{ fileNameAndStatus: string[], statsSummary: StatsSummary }> {
   const statsSummaryLocal: StatsSummary = [];
   const fileNameAndStatus = await Promise.all(files.map(async (file) => {
@@ -100,11 +97,6 @@ async function getFileNameAndStatusWithSummary(
         statsSummaryLocal.push({file: file.filename, added: 0, removed: removed, summary: 'This file is removed in this PR'});
         return `${file.filename}: removed`;
       } else {
-        await octokit.rest.repos.getContent({
-          ...repo,
-          path: file.filename,
-          ref: pullRequest.head.sha,
-        });
         const { added, removed } = calculateFilePatchNumLines(file.patch as string);
         const summary = await generateFileSummary(client, deployment, file.patch as string);
         statsSummaryLocal.push({file: file.filename, added: added, removed: removed, summary: summary});
@@ -151,7 +143,7 @@ export async function generatePRDescription(
     fileNameAndStatus = result.fileNameAndStatus;
     localStatsSummary = result.statsSummary;
   } else {
-    const result = await getFileNameAndStatusWithSummary(files, client, deployment, octokit, repo, pullRequest);
+    const result = await getFileNameAndStatusWithSummary(files, client, deployment);
     fileNameAndStatus = result.fileNameAndStatus;
     localStatsSummary = result.statsSummary;
   }

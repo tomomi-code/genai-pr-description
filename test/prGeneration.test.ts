@@ -68,19 +68,6 @@ describe('generatePRDescription', () => {
     );
   });
 
-  it('should log an error if a file is not found', async () => {
-    // Mock API responses
-    // Mock the getContent method
-    (mockOctokit.rest.repos.getContent as unknown as jest.Mock).mockRejectedValueOnce({ status: 404 });
-
-    // Call the function
-    await generatePRDescription(mockClient, mockDeployment, mockOctokit as any);
-
-    // Assertions
-    expect(mockOctokit.rest.repos.getContent).toHaveBeenCalled();
-    expect(mockOctokit.rest.pulls.update).toHaveBeenCalled();
-  });
-
   it('should replace the old AI-generated section if present', async () => {
   const oldAISection = `
 <!-- AI-GENERATED-PR-DESCRIPTION-START -->
