@@ -36182,8 +36182,6 @@ This pull request includes the following changes, in format of file name: file s
 </code_change>
 
 <detailed_task_description>
-<strong>At the very beginning of the PR description, clearly explain WHY (the purpose) this PR is being created. The WHY may include several reasons, such as fixing bugs, refactoring, or adding new features. Be explicit about the motivations and goals behind this PR, and make it part of the main description.</strong>
-
 Please include a summary of the changes in one of the following categories:
 - Bug fix (non-breaking change which fixes an issue)
 - New feature (non-breaking change which adds functionality)
@@ -36196,7 +36194,7 @@ Please also include relevant motivation and context. List any dependencies that 
 <output_format>
 Provide your PR description in the following format:
 # Description
-[At the beginning, clearly state all the reasons and motivations for this PR (the WHY), such as bug fixes, refactoring, new features, etc. Then continue with the rest of the PR description.]
+[Insert the PR description here]
 
 ## Type of change
 [Select one of the following options in the checkbox]
