@@ -44,38 +44,57 @@ const core = __importStar(__nccwpck_require__(7484));
 const github_1 = __nccwpck_require__(3228);
 const openai_1 = __nccwpck_require__(2583);
 __nccwpck_require__(2874);
-// current we support typescript and python, while the python library is not available yet, we will use typescript as the default language
-// using abosolute path to import the functions from testGenerator.ts
 const prGeneration_1 = __nccwpck_require__(1027);
 async function run() {
     try {
         console.log('Starting the GitHub Action... version 0.1d');
-        const githubToken = core.getInput('github-token');
-        const apiKey = core.getInput('azure-openai-api-key');
-        const endpoint = core.getInput('azure-openai-endpoint');
-        const apiVersion = core.getInput('azure-openai-api-version') || '2024-04-01-preview'; // Replace with your Azure OpenAI API version
-        const deployment = core.getInput('azure-openai-deployment') || 'gpt-35-turbo'; // Replace with your Azure OpenAI deployment name
-        const prTemplateB64 = core.getInput('pr-template-b64');
+        const githubToken = core.getInput('github-token') || process.env['GITHUB_TOKEN'];
+        const apiKey = core.getInput('azure-openai-api-key') || process.env['AZURE_OPENAI_API_KEY'];
+        const endpoint = core.getInput('azure-openai-endpoint') || process.env['AZURE_OPENAI_ENDPOINT'];
+        const apiVersion = core.getInput('azure-openai-api-version') || process.env['AZURE_OPENAI_API_VERSION'] || '2024-04-01-preview';
+        const deployment = core.getInput('azure-openai-deployment') || process.env['AZURE_OPENAI_DEPLOYMENT'] || 'gpt-35-turbo';
+        const prTemplateB64 = core.getInput('pr-template-b64') || process.env['PR_TEMPLATE_B64'];
         const prTemplate = prTemplateB64 ? Buffer.from(prTemplateB64, 'base64').toString('utf-8') : '';
-        console.log(`GitHub Token: ${githubToken ? 'Token is set' : 'Token is not set'}`);
-        // Azure configuration
-        console.log(`apiKey: ${apiKey}`);
-        console.log(`Endpoint: ${endpoint}`);
-        console.log(`API Version: ${apiVersion}`);
-        console.log(`Deployment: ${deployment}`);
-        if (!githubToken) {
+        const owner = process.env['PR_OWNER'];
+        const repoName = process.env['PR_REPO'];
+        const prNumber = process.env['PR_NUMBER'] ? Number(process.env['PR_NUMBER']) : undefined;
+        if (!githubToken)
             throw new Error('GitHub token is not set');
-        }
+        if (!apiKey)
+            throw new Error('Azure OpenAI API key is not set');
+        if (!endpoint)
+            throw new Error('Azure OpenAI endpoint is not set');
         const azClient = new openai_1.AzureOpenAI({ apiKey, endpoint, apiVersion });
         const octokit = (0, github_1.getOctokit)(githubToken);
-        if (!github_1.context.payload.pull_request) {
-            console.log('No pull request found in the context. This action should be run only on pull request events.');
+        let pullRequest;
+        let repo;
+        if (github_1.context.payload.pull_request) {
+            pullRequest = github_1.context.payload.pull_request;
+            repo = github_1.context.repo;
+        }
+        else if (owner && repoName && prNumber) {
+            // Manual mode: fetch PR info using env vars
+            repo = { owner, repo: repoName };
+            const { data: pr } = await octokit.rest.pulls.get({
+                owner,
+                repo: repoName,
+                pull_number: prNumber,
+            });
+            pullRequest = pr;
+        }
+        else {
+            console.log('No pull request found in the context or environment. This action should be run on PR events or with PR_OWNER, PR_REPO, and PR_NUMBER set.');
             return;
         }
-        const pullRequest = github_1.context.payload.pull_request;
-        const repo = github_1.context.repo;
         console.log(`Reviewing PR #${pullRequest.number} in ${repo.owner}/${repo.repo}`);
-        // Generate PR description
+        // DRY RUN support
+        if (process.env['DRY_RUN'] === 'true') {
+            const prDescription = await (0, prGeneration_1.generatePRDescription)(azClient, deployment, octokit, prTemplate, { dryRun: true, pullRequest: pullRequest, repo });
+            console.log('\n--- Generated PR Description (Dry Run) ---\n');
+            console.log(prDescription);
+            return;
+        }
+        // Normal GitHub Action flow
         await (0, prGeneration_1.generatePRDescription)(azClient, deployment, octokit, prTemplate);
     }
     catch (error) {
@@ -36264,9 +36283,22 @@ async function getFileNameAndStatusWithSummary(files, client, deployment) {
     }));
     return { fileNameAndStatus, statsSummary: statsSummaryLocal };
 }
-async function generatePRDescription(client, deployment, octokit, prTemplate) {
-    const pullRequest = github_1.context.payload.pull_request;
-    const repo = github_1.context.repo;
+/**
+ * Generate a PR description and either update GitHub or return the content.
+ * @param client AzureOpenAI client
+ * @param deployment Azure OpenAI deployment name
+ * @param octokit Octokit instance
+ * @param prTemplate Optional PR template
+ * @param options Optional parameters:
+ *   - dryRun: If true, returns the generated description instead of updating GitHub.
+ *   - pullRequest: Optional PullRequest object to use instead of context payload
+ *   - repo: Optional repository info to use instead of context repo
+ * @returns
+ *   - If dryRun is true, returns the generated description as a string.
+ */
+async function generatePRDescription(client, deployment, octokit, prTemplate, options) {
+    const pullRequest = options?.pullRequest || github_1.context.payload.pull_request;
+    const repo = options?.repo || github_1.context.repo;
     // Fetch the current PR description
     const { data: currentPR } = await octokit.rest.pulls.get({
         ...repo,
@@ -36350,6 +36382,10 @@ ${aiGeneratedContent}
     }
     // Always append the new foldableContent
     finalDescription = `${finalDescription}\n\n${foldableContent}`;
+    // If dryRun, return only the new generated foldable content (not including originalDescription)
+    if (options?.dryRun) {
+        return foldableContent;
+    }
     // Update the PR with the combined description
     await octokit.rest.pulls.update({
         ...repo,

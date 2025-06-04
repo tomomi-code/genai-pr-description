@@ -113,14 +113,28 @@ async function getFileNameAndStatusWithSummary(
   return { fileNameAndStatus, statsSummary: statsSummaryLocal };
 }
 
+/**
+ * Generate a PR description and either update GitHub or return the content.
+ * @param client AzureOpenAI client
+ * @param deployment Azure OpenAI deployment name
+ * @param octokit Octokit instance
+ * @param prTemplate Optional PR template
+ * @param options Optional parameters:
+ *   - dryRun: If true, returns the generated description instead of updating GitHub.
+ *   - pullRequest: Optional PullRequest object to use instead of context payload
+ *   - repo: Optional repository info to use instead of context repo
+ * @returns
+ *   - If dryRun is true, returns the generated description as a string.
+ */
 export async function generatePRDescription(
     client: AzureOpenAI, 
     deployment: string, 
     octokit: ReturnType<typeof getOctokit>,
-    prTemplate?: string
-  ): Promise<void> {
-  const pullRequest = context.payload.pull_request as PullRequest;
-  const repo = context.repo;
+    prTemplate?: string,
+    options?: { dryRun?: boolean, pullRequest?: PullRequest, repo?: { owner: string; repo: string } }
+  ): Promise<void | string> {
+  const pullRequest = options?.pullRequest || (context.payload.pull_request as PullRequest);
+  const repo = options?.repo || context.repo;
 
   // Fetch the current PR description
   const { data: currentPR } = await octokit.rest.pulls.get({
@@ -220,6 +234,12 @@ ${aiGeneratedContent}
 
   // Always append the new foldableContent
   finalDescription = `${finalDescription}\n\n${foldableContent}`;
+
+
+  // If dryRun, return only the new generated foldable content (not including originalDescription)
+  if (options?.dryRun) {
+    return foldableContent;
+  }
 
   // Update the PR with the combined description
   await octokit.rest.pulls.update({

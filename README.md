@@ -42,6 +42,21 @@ For more details, refer to the workflow file at `.github/workflows/code-review.y
 This repository is configured for development in a [dev container](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers).
 When you open the project in a dev container, all dependencies are installed automatically, and Husky git hooks are set up via the `postCreateCommand` in `.devcontainer/devcontainer.json`.
 
+### Dry Run (Manual PR Description Generation)
+
+You can generate a PR description **without updating GitHub** by running the action in "dry run" mode.  
+This is useful for previewing the generated description or saving it locally.
+
+1. Copy `.env.sample` to `.env` and fill in the required values (see comments in the file).
+2. Run the script:
+
+   ```sh
+   DRY_RUN=true node dist/index.js
+   ```
+
+- The generated PR description will be printed to the console and will not update the PR on GitHub.
+- All other environment variables (GitHub/Azure credentials, PR info) are read from your `.env` file.
+
 ### Running Tests
 
 To run the test suite locally or in the dev container:

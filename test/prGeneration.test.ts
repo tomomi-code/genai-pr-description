@@ -121,4 +121,30 @@ Old AI generated content
     // Ensure it was only called once
     expect(invokeModel).toHaveBeenCalledTimes(1);
   });
+
+  it('should not call octokit.rest.pulls.update in dryRun mode', async () => {
+    const prTemplate = '# Dry Run PR Template\n\nDry run intro text.';
+
+    // Mock API responses
+    mockOctokit.rest.pulls.get = jest.fn().mockResolvedValue({
+      data: { body: 'Original PR description' },
+    }) as unknown as typeof mockOctokit.rest.pulls.get;
+    (mockOctokit.rest.pulls.listFiles as unknown as jest.Mock).mockResolvedValue({
+      data: [
+        { filename: 'file1.ts', status: 'modified', patch: '+added line\n-removed line' },
+      ],
+    });
+
+    // Call with dryRun: true
+    await generatePRDescription(
+      mockClient,
+      mockDeployment,
+      mockOctokit as any,
+      prTemplate,
+      { dryRun: true }
+    );
+
+    // Should NOT call update
+    expect(mockOctokit.rest.pulls.update).not.toHaveBeenCalled();
+  });
 });
