@@ -21,6 +21,6 @@ export default [
     },
   },
   {
-    ignores: ['dist/index.js'], // Add this to ignore the file
+    ignores: ['dist/index.js', 'evaluation/**/*.py'], // Add this to ignore the file
   },
 ];
