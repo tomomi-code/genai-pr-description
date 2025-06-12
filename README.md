@@ -2,7 +2,7 @@
 
 This repository provides a GitHub Action powered by Azure OpenAI to generate intelligent pull request (PR) descriptions, perform code reviews, and manage issues.
 
-![Architecture](architecture.png)
+![Architecture - GitHub Action](./images/architecture-github-action.png)
 
 ## How to Set Up in Your Repository
 
@@ -43,6 +43,8 @@ This repository is configured for development in a [dev container](https://marke
 When you open the project in a dev container, all dependencies are installed automatically, and Husky git hooks are set up via the `postCreateCommand` in `.devcontainer/devcontainer.json`.
 
 ### Dry Run (Manual PR Description Generation)
+
+![Architecture - Dry run](./images/architecture-dry-run.png)
 
 You can generate a PR description **without updating GitHub** by running the action in "dry run" mode.  
 This is useful for previewing the generated description or saving it locally.
